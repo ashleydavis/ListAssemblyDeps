@@ -15,20 +15,26 @@ namespace ListAssemblyDeps
             {
                 Console.Error.WriteLine("Bad arguments!");
                 Console.WriteLine("Usage:");
-                Console.WriteLine("AssemblyDeps.exe <config-filename>");
-                return 1;
-            }
-
-            var assemblyPath = args[0];
-            if (!File.Exists(assemblyPath))
-            {
-                Console.Error.WriteLine("Assemmbly '" + assemblyPath + "' does not exist.");
+                Console.WriteLine("ListAssemblyDeps.exe <assembly-file-path>");
+                Console.WriteLine("ListAssemblyDeps.exe <directory-path>");
                 return 1;
             }
 
             try
             {
-                DisplayAssemblyDetails(assemblyPath, 0, false);
+                var assemblyPath = args[0];
+                if (Directory.Exists(assemblyPath))
+                {
+                    foreach (var assemblyFilePath in Directory.GetFiles(assemblyPath, "*.dll"))
+                    {
+                        DisplayAssemblyDetails(assemblyFilePath, 0, false);
+                    }
+                    return 0;
+                }
+                else
+                {
+                    DisplayAssemblyDetails(assemblyPath, 0, false);
+                }
             }
             catch (Exception ex)
             {
@@ -41,6 +47,13 @@ namespace ListAssemblyDeps
 
         private static void DisplayAssemblyDetails(string assemblyPath, int indent, bool isReference)
         {
+            if (!File.Exists(assemblyPath))
+            {
+                var msg = "Assemmbly '" + assemblyPath + "' does not exist.";
+                Console.Error.WriteLine(msg);
+                throw new Exception(msg);
+            }
+
             var assemblyDir = Path.GetDirectoryName(assemblyPath);
             var assembly = Assembly.LoadFile(assemblyPath);
             var assemblyName = assembly.GetName();
@@ -63,9 +76,13 @@ namespace ListAssemblyDeps
                 Console.WriteLine(refIndentStr + referencedAssemblyName.Name + " (" + referencedAssemblyName.Version + ")");
 
                 var referencedAssemblyPath = Path.Combine(assemblyDir, referencedAssemblyName.Name + ".dll");
-                if (File.Exists( referencedAssemblyPath))
+                if (File.Exists(referencedAssemblyPath))
                 {
                     DisplayAssemblyDetails(referencedAssemblyPath, indent+2, true);
+                }
+                else
+                {
+                    Console.WriteLine(refIndentStr + "    Not found!");
                 }
             }
         }
